@@ -3,9 +3,16 @@ name: Release Please
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to package
+        required: true
+        type: string
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -23,14 +30,17 @@ jobs:
 
   package:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    if: >-
+      always() &&
+      ((github.event_name == 'push' && needs.release-please.outputs.release_created == 'true') ||
+       github.event_name == 'workflow_dispatch')
     runs-on: macos-26
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ github.event.inputs.release_tag || needs.release-please.outputs.tag_name }}
           fetch-depth: 0
       - uses: ruby/setup-ruby@v1
         with:
@@ -40,12 +50,12 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: macos/Pods
           key: pods-${{ runner.os }}-${{ hashFiles('macos/Podfile.lock', 'Gemfile.lock') }}
           restore-keys: pods-${{ runner.os }}-
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: DerivedData/ReleaseBuild
           key: derived-release-${{ runner.os }}-${{ hashFiles('package-lock.json', 'macos/Podfile.lock', 'macos/EaktaViewer.xcodeproj/project.pbxproj') }}
@@ -54,14 +64,14 @@ jobs:
       - run: make check
       - name: Build release package
         env:
-          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
+          TAG_NAME: ${{ github.event.inputs.release_tag || needs.release-please.outputs.tag_name }}
         run: |
-          VERSION="${TAG_NAME#v}"
+          VERSION="${TAG_NAME##*-v}"
           make package VERSION="$VERSION"
       - name: Upload release asset
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
+          TAG_NAME: ${{ github.event.inputs.release_tag || needs.release-please.outputs.tag_name }}
         run: |
-          VERSION="${TAG_NAME#v}"
+          VERSION="${TAG_NAME##*-v}"
           gh release upload "$TAG_NAME" "dist/e-Akta-Viewer-${VERSION}-macos-universal-unsigned.zip" --clobber
