@@ -38,10 +38,21 @@ export async function extractComponent(
   const payload = source.object.textContent ?? '';
   const encrypted = source.transforms.includes('encrypt');
   const zipped = source.transforms.includes('zip') && !encrypted;
-  const suggestedName = `${source.title}.${
-    encrypted ? 'p7m' : source.extension
-  }`;
-  const outputMime = encrypted ? 'application/pkcs7-mime' : source.mimeType;
+  const hintedPdf =
+    !encrypted &&
+    source.mimeType === 'application/octet-stream' &&
+    source.hintedExtension === 'pdf';
+  const effectiveExtension = encrypted
+    ? 'p7m'
+    : hintedPdf
+    ? 'pdf'
+    : source.extension;
+  const suggestedName = `${source.title}.${effectiveExtension}`;
+  const outputMime = encrypted
+    ? 'application/pkcs7-mime'
+    : hintedPdf
+    ? 'application/pdf'
+    : source.mimeType;
   try {
     const sink = await OutputSink.create(
       io,
@@ -57,6 +68,19 @@ export async function extractComponent(
       for (const chunk of decoded) await sink.write(chunk);
     }
     const finished = await sink.finish();
+    if (
+      hintedPdf &&
+      !(
+        finished.headerBytes.length >= 5 &&
+        finished.headerBytes[0] === 0x25 &&
+        finished.headerBytes[1] === 0x50 &&
+        finished.headerBytes[2] === 0x44 &&
+        finished.headerBytes[3] === 0x46 &&
+        finished.headerBytes[4] === 0x2d
+      )
+    ) {
+      throw new ComponentExtractionError('content-magic-mismatch');
+    }
     if (
       !encrypted &&
       source.sourceSize !== undefined &&
@@ -76,7 +100,7 @@ export async function extractComponent(
       parentSignatureId: source.parentSignatureId,
       title: source.title,
       mimeType: outputMime,
-      extension: encrypted ? 'p7m' : source.extension,
+      extension: effectiveExtension,
       sourceSize: source.sourceSize,
       extractedSize: finished.size,
       previewPath: finished.previewPath,

@@ -14,6 +14,13 @@ if (!podfile.includes(':hermes_enabled => true'))
   failures.push('Hermes is not enabled.');
 if (!project.includes('EaktaViewer-macOS'))
   failures.push('macOS target is missing.');
+if (/EaktaViewer-iOS|iphoneos|IPHONEOS_DEPLOYMENT_TARGET/.test(project))
+  failures.push('Unsupported iOS target or build settings remain.');
+if (
+  !project.includes('path = "e-Akta Viewer.app"') ||
+  project.includes('path = EaktaViewer.app')
+)
+  failures.push('macOS product reference is not e-Akta Viewer.app.');
 const debugConfig =
   'macos/Pods/Target Support Files/Pods-EaktaViewer-macOS/Pods-EaktaViewer-macOS.debug.xcconfig';
 if (existsSync(debugConfig)) {

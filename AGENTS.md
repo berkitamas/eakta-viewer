@@ -49,3 +49,5 @@
 - Conventional Commits are mandatory: `feat(viewer): add preview`, `fix(verifier): reject duplicate IDs`, `docs: explain privacy`, `test(crypto): add timestamp vector`, `build: update toolchain`, `ci: package universal app`, `chore: refresh trust snapshot`.
 - Use `!` or a `BREAKING CHANGE:` footer for breaking changes.
 - Release Please owns version and changelog updates. Release assets remain named `unsigned` because ad-hoc signing supplies no publisher identity or notarization.
+- Never commit directly to `main`. Create a focused branch, push it, and open a pull request.
+- Require the pull request checks to pass before merging. Keep unrelated changes in separate pull requests.

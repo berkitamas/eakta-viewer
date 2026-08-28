@@ -129,7 +129,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 8,
   },
-  header: { borderBottomColor: '#E5E7EB', borderBottomWidth: 1, padding: 16 },
+  header: {
+    borderBottomColor: '#E5E7EB',
+    borderBottomWidth: 1,
+    height: 96,
+    padding: 16,
+  },
   root: {
     backgroundColor: '#F9FAFB',
     borderRightColor: '#E5E7EB',

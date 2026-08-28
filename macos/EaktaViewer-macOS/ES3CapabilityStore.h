@@ -24,5 +24,6 @@ typedef void (^ES3VoidCompletion)(NSError *_Nullable error);
 
 NSString *ES3SafeSuggestedName(NSString *name);
 NSError *ES3CapabilityError(NSInteger code);
+NSURL *_Nullable ES3DroppedFileURL(NSString *value);
 
 NS_ASSUME_NONNULL_END

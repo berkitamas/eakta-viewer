@@ -72,18 +72,14 @@ function AppContent(): React.JSX.Element {
     if (result.status === 'selected' && result.input) beginInput(result.input);
   }, [beginInput]);
 
-  const closeDossier = useCallback(async () => {
-    if (input) {
-      await NativeES3MacBridge.cancelSession(input.sessionId);
-      await NativeES3MacBridge.cleanupSession(input.sessionId);
-    }
+  const closeDossier = useCallback(() => {
     setInput(undefined);
     setDossier(undefined);
     setPhase(undefined);
     setError(undefined);
     setSelectedDocumentId(undefined);
     setSelectedSignatureId(undefined);
-  }, [input]);
+  }, []);
 
   const exportSelected = useCallback(async () => {
     if (!selectedDocument) return;
@@ -248,10 +244,15 @@ function AppContent(): React.JSX.Element {
       onDragLeave={() => setDropActive(false)}
       onDrop={event => {
         setDropActive(false);
-        const uri = event.nativeEvent.dataTransfer.files[0]?.uri;
-        if (uri) void NativeES3MacBridge.adoptDroppedFile(uri).then(beginInput);
+        const uri = event.nativeEvent.dataTransfer?.files?.[0]?.uri;
+        if (uri) {
+          void NativeES3MacBridge.adoptDroppedFile(uri)
+            .then(beginInput)
+            .catch(() => setError('drop-failed'));
+        }
       }}
       style={[styles.app, colorScheme === 'dark' && styles.appDark]}
+      testID="app-root"
     >
       <VerifierHost
         input={input}
@@ -409,7 +410,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    height: 52,
+    height: 96,
     paddingHorizontal: 16,
   },
   toolbarTitle: { color: '#111827', flex: 1, fontSize: 13, fontWeight: '600' },

@@ -195,26 +195,41 @@ export function VerifierHost({
   );
 
   useEffect(() => {
-    if (!ready || !input) return;
+    if (!ready) return;
     let disposed = false;
-    const start = async () => {
+    const cancelPrevious = async () => {
       const previous = active.current;
-      if (previous) {
-        const { promise, resolve } = Promise.withResolvers<void>();
-        cancellationAck.current = resolve;
-        post({
-          protocolVersion: VERIFIER_PROTOCOL_VERSION,
-          type: 'cancel',
-          requestId: previous.requestId,
-          operationId: `${previous.requestId}:cancel`,
-        });
-        const timeout = Promise.withResolvers<void>();
-        setTimeout(timeout.resolve, 5_000);
-        await Promise.race([promise, timeout.promise]);
+      if (!previous) return;
+      const { promise, resolve } = Promise.withResolvers<void>();
+      cancellationAck.current = resolve;
+      post({
+        protocolVersion: VERIFIER_PROTOCOL_VERSION,
+        type: 'cancel',
+        requestId: previous.requestId,
+        operationId: `${previous.requestId}:cancel`,
+      });
+      const timeout = Promise.withResolvers<void>();
+      setTimeout(timeout.resolve, 5_000);
+      await Promise.race([promise, timeout.promise]);
+      if (cancellationAck.current === resolve)
+        cancellationAck.current = undefined;
+      try {
         await NativeES3MacBridge.cancelSession(previous.sessionId);
-        await NativeES3MacBridge.cleanupSession(previous.sessionId);
+      } catch {
+        recordDiagnostic('native-operation-failed');
       }
-      if (disposed) return;
+      try {
+        await NativeES3MacBridge.cleanupSession(previous.sessionId);
+      } catch {
+        recordDiagnostic('native-operation-failed');
+      } finally {
+        if (active.current?.requestId === previous.requestId)
+          active.current = undefined;
+      }
+    };
+    const start = async () => {
+      await cancelPrevious();
+      if (disposed || !input) return;
       requestSequence += 1;
       const requestId = `request-${requestSequence}`;
       active.current = { requestId, sessionId: input.sessionId };
@@ -225,6 +240,10 @@ export function VerifierHost({
       } catch {
         recordDiagnostic('session-cache-load-failed');
         cache = { status: 'missing' };
+      }
+      if (disposed || active.current?.requestId !== requestId) {
+        if (active.current?.requestId === requestId) active.current = undefined;
+        return;
       }
       const trustCache =
         cache.status === 'available' &&
@@ -253,6 +272,7 @@ export function VerifierHost({
       recordDiagnostic('session-started');
     };
     void start().catch(() => {
+      if (disposed || !input) return;
       recordDiagnostic('session-start-failed');
       onError('session-start-failed');
     });

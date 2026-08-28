@@ -12,6 +12,7 @@ export interface ComponentSource {
   title: string;
   mimeType: string;
   extension: string;
+  hintedExtension?: string;
   sourceSize?: number;
   object: Element;
   profile: Element;
@@ -150,6 +151,14 @@ function componentFromElement(
     .toLowerCase()
     .split(';', 1)[0]
     .trim();
+  const declaredExtension = mimeElement
+    ?.getAttribute('extension')
+    ?.toLowerCase()
+    .replace(/^\./, '');
+  const hintedExtension =
+    declaredExtension && /^[a-z0-9]{1,10}$/.test(declaredExtension)
+      ? declaredExtension
+      : undefined;
   const sourceSizeElement = directChild(profile, ES3_NAMESPACE, 'SourceSize');
   const sourceSizeText =
     sourceSizeElement?.getAttribute('sizeValue') ??
@@ -181,6 +190,7 @@ function componentFromElement(
     ),
     mimeType,
     extension: EXTENSION_BY_MIME[mimeType] ?? 'bin',
+    hintedExtension,
     sourceSize,
     object,
     profile,

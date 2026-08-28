@@ -17,6 +17,20 @@ NSString *ES3SafeSuggestedName(NSString *name)
   return last;
 }
 
+NSURL *ES3DroppedFileURL(NSString *value)
+{
+  NSURL *candidate;
+  if ([value hasPrefix:@"/"]) {
+    candidate = [NSURL fileURLWithPath:value.stringByStandardizingPath isDirectory:NO];
+  } else {
+    candidate = [NSURL URLWithString:value];
+  }
+  if (!candidate.isFileURL || candidate.host.length) return nil;
+  NSString *path = candidate.path.stringByStandardizingPath;
+  if (![path isAbsolutePath]) return nil;
+  return [NSURL fileURLWithPath:path isDirectory:NO];
+}
+
 @interface ES3CapabilityStore ()
 @property(nonatomic, readwrite) dispatch_queue_t queue;
 @property(nonatomic, strong) NSMutableDictionary<NSString *, NSMutableDictionary *> *inputs;
