@@ -148,6 +148,7 @@ export class OutputSink {
     previewPath: string;
     size: number;
     preview: DocumentPreviewPayload;
+    headerBytes: Uint8Array;
   }> {
     const finished = await this.io.finishOutput(this.outputToken);
     this.previewPath = finished.previewPath;
@@ -169,6 +170,7 @@ export class OutputSink {
           truncated,
           previewPath: this.previewPath,
         },
+        headerBytes: previewBytes,
       };
     }
     return {
@@ -180,6 +182,7 @@ export class OutputSink {
         text: hexPreview(previewBytes),
         truncated,
       },
+      headerBytes: previewBytes,
     };
   }
 }

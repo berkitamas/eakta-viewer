@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalization } from '../i18n/LocalizationProvider';
 
 interface InformationSheetProps {
@@ -14,32 +14,30 @@ export function InformationSheet({
   const { t } = useLocalization();
   if (!mode) return null;
   return (
-    <Modal animationType="fade" onRequestClose={onClose} transparent visible>
-      <View style={styles.overlay}>
-        <View
-          accessibilityViewIsModal
-          style={styles.sheet}
-          testID={`${mode}-sheet`}
+    <View style={styles.overlay} testID="information-overlay">
+      <View
+        accessibilityViewIsModal
+        style={styles.sheet}
+        testID={`${mode}-sheet`}
+      >
+        <Text style={styles.title}>
+          {mode === 'about' ? t('about') : t('privacyTitle')}
+        </Text>
+        {mode === 'about' ? (
+          <Text style={styles.version}>{t('aboutVersion')} 0.1.0</Text>
+        ) : null}
+        <Text style={styles.paragraph}>{t('privacyLocal')}</Text>
+        <Text style={styles.paragraph}>{t('privacyNetwork')}</Text>
+        <Text style={styles.disclaimer}>{t('disclaimer')}</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onClose}
+          style={styles.button}
         >
-          <Text style={styles.title}>
-            {mode === 'about' ? t('about') : t('privacyTitle')}
-          </Text>
-          {mode === 'about' ? (
-            <Text style={styles.version}>{t('aboutVersion')} 0.1.0</Text>
-          ) : null}
-          <Text style={styles.paragraph}>{t('privacyLocal')}</Text>
-          <Text style={styles.paragraph}>{t('privacyNetwork')}</Text>
-          <Text style={styles.disclaimer}>{t('disclaimer')}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onClose}
-            style={styles.button}
-          >
-            <Text style={styles.buttonText}>{t('closeSheet')}</Text>
-          </Pressable>
-        </View>
+          <Text style={styles.buttonText}>{t('closeSheet')}</Text>
+        </Pressable>
       </View>
-    </Modal>
+    </View>
   );
 }
 
@@ -63,8 +61,13 @@ const styles = StyleSheet.create({
   overlay: {
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.35)',
-    flex: 1,
+    bottom: 0,
     justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 1000,
   },
   paragraph: { color: '#4B5563', fontSize: 13, lineHeight: 20, marginTop: 10 },
   sheet: {

@@ -126,7 +126,12 @@ RCT_EXPORT_MODULE(ES3MacBridge)
 
 - (void)adoptDroppedFile:(NSString *)uri resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
-  [self.capabilities adoptURL:[NSURL URLWithString:uri] completion:^(NSDictionary *value, NSError *error) {
+  NSURL *url = ES3DroppedFileURL(uri);
+  if (!url) {
+    reject(@"drop-policy", @"Dropped input must be an absolute path or file URL.", nil);
+    return;
+  }
+  [self.capabilities adoptURL:url completion:^(NSDictionary *value, NSError *error) {
     [self resolveDictionary:resolve reject:reject value:value error:error code:@"drop-failed"];
   }];
 }

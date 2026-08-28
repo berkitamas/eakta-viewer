@@ -13,6 +13,7 @@ try {
     '-framework',
     'Foundation',
     'macos/EaktaViewer-macOS/ES3EvidenceBroker.mm',
+    'macos/EaktaViewer-macOS/ES3CapabilityStore.mm',
     'test/native/ES3EvidenceBrokerTests.mm',
     '-o',
     binary,

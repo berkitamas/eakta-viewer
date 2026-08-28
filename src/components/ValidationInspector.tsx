@@ -252,7 +252,9 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 14,
     fontWeight: '700',
-    padding: 16,
+    height: 96,
+    paddingHorizontal: 16,
+    paddingTop: 38,
   },
   value: { color: '#1F2937', fontSize: 12, lineHeight: 17 },
 });

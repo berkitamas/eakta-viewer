@@ -20,6 +20,7 @@
   self.menuController = [ES3MenuController new];
   [self.menuController installMainMenu];
   NSWindow *window = NSApplication.sharedApplication.mainWindow;
+  window.title = @"e-Akta Viewer";
   window.minSize = NSMakeSize(1100, 720);
 }
 

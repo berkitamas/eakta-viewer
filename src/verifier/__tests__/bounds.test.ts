@@ -91,6 +91,7 @@ function dossier(
     sourceSize?: number;
     profile?: string | null;
     extra?: string;
+    mime?: { type: string; subtype: string; extension?: string };
   } = {},
 ): Uint8Array {
   const payload = options.payload ?? Buffer.from('hello').toString('base64');
@@ -100,12 +101,16 @@ function dossier(
     .join('')}</BaseTransform>`;
   const profileAttribute =
     options.profile === null ? '' : ` Version="${options.profile ?? '1.2'}"`;
+  const mime = options.mime ?? { type: 'text', subtype: 'plain' };
+  const mimeExtension = mime.extension ? ` extension="${mime.extension}"` : '';
   return new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8"?>
 <Dossier xmlns="https://www.microsec.hu/ds/e-szigno30#" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
 <DossierProfile${profileAttribute} OBJREF="#documents"/><Documents Id="documents"><Document Id="document">
 <DocumentProfile OBJREF="${
     options.objref ?? 'object'
-  }"><Title>File</Title><Format><MIME-Type>text/plain</MIME-Type></Format>
+  }"><Title>File</Title><Format><MIME-Type type="${mime.type}" subtype="${
+    mime.subtype
+  }"${mimeExtension}/></Format>
 <SourceSize sizeUnit="byte" sizeValue="${
     options.sourceSize ?? 5
   }"/>${transformXml}</DocumentProfile>
@@ -140,6 +145,27 @@ test('accepts the namespace-defined 1.2 profile shape without an optional Versio
   const response = await verify(dossier({ profile: null }));
   expect(response.aborted).toBe(false);
   expect(response.result?.metadata.profile).toBe('1.2');
+});
+
+test('uses a safe structured MIME extension when octet-stream carries a PDF', async () => {
+  const response = await verify(
+    dossier({
+      mime: { type: 'application', subtype: 'octet-stream', extension: 'pdf' },
+      payload: Buffer.from('%PDF-', 'ascii').toString('base64'),
+    }),
+  );
+  expect(response.result?.documents[0]).toMatchObject({
+    mimeType: 'application/pdf',
+    extension: 'pdf',
+  });
+  const corrupt = await verify(
+    dossier({
+      mime: { type: 'application', subtype: 'octet-stream', extension: 'pdf' },
+    }),
+  );
+  expect(corrupt.result?.documents[0]?.extractionError).toBe(
+    'content-magic-mismatch',
+  );
 });
 
 test('rejects UTF-8 BOM with ISO-8859-2 declaration', async () => {

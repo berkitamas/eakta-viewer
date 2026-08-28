@@ -1,8 +1,8 @@
 import 'react-native';
 
 interface MacFileDropEvent {
-  dataTransfer: {
-    files: Array<{ uri: string }>;
+  dataTransfer?: {
+    files?: Array<{ uri: string }>;
   };
 }
 
