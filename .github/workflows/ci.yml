@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: make check
+      - name: Commitlint pull request
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: npx commitlint --from "$BASE_SHA" --to "$HEAD_SHA"
+
+  macos:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: make bootstrap
+      - run: make check
+      - run: make package VERSION=ci
+      - name: Verify code signature and entitlements
+        run: |
+          codesign --verify --deep --strict 'dist/e-Akta Viewer.app'
+          codesign -d --entitlements :- 'dist/e-Akta Viewer.app' > /tmp/eakta-entitlements.plist
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' /tmp/eakta-entitlements.plist
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.files.user-selected.read-write' /tmp/eakta-entitlements.plist
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.network.client' /tmp/eakta-entitlements.plist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: e-Akta-Viewer-ci-macos-universal-unsigned
+          path: dist/e-Akta-Viewer-ci-macos-universal-unsigned.zip
+          retention-days: 7
+          if-no-files-found: error

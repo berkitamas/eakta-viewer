@@ -1,0 +1,9 @@
+DerivedData/
+dist/
+macos/Pods/
+macos/build/
+node_modules/
+src/verifier/trust/snapshot/
+src/verifier/verifierBundle.generated.ts
+vendor/
+package-lock.json

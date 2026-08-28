@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-08-26T12:38:47.187Z",
+  "lotlUrl": "https://ec.europa.eu/tools/lotl/eu-lotl.xml",
+  "huTslUrl": "https://www.nmhh.hu/tl/pub/HU_TL.xml",
+  "lotlNextUpdate": "2027-02-19T18:25:00.000Z",
+  "huTslNextUpdate": "2027-01-15T09:00:00.000Z",
+  "lotlSha256": "09b50b1766f3c460826de90cc6620c6accd754fb6fd6a82dcba4516132cf3fb0",
+  "huTslSha256": "aa2dabaaea6266d907e12c4225d4173262466b9c6add91776776a00dd6c528a3",
+  "lotlSize": 476871,
+  "huTslSize": 1461573
+}

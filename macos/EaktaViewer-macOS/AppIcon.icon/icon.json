@@ -1,0 +1,88 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "display-p3:0.11373,0.30588,0.84706,1.00000",
+          "display-p3:0.37647,0.64706,0.98039,1.00000"
+        ]
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "display-p3:0.07059,0.22353,0.65098,1.00000",
+          "display-p3:0.23137,0.50980,0.89412,1.00000"
+        ]
+      }
+    },
+    {
+      "appearance": "tinted",
+      "value": {
+        "solid": "extended-gray:0.18000,1.00000"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "blur-material": 0.08,
+      "layers": [
+        {
+          "fill-specializations": [
+            { "value": { "solid": "extended-gray:1.00000,1.00000" } },
+            {
+              "appearance": "dark",
+              "value": { "solid": "extended-gray:1.00000,1.00000" }
+            },
+            {
+              "appearance": "tinted",
+              "value": { "solid": "extended-gray:1.00000,1.00000" }
+            }
+          ],
+          "glass": true,
+          "hidden": false,
+          "image-name": "document.svg",
+          "name": "Layered document",
+          "position": { "scale": 1, "translation-in-points": [0, 0] }
+        }
+      ],
+      "lighting": "combined",
+      "shadow": { "kind": "neutral", "opacity": 0.35 },
+      "specular": true,
+      "translucency": { "enabled": true, "value": 0.96 }
+    },
+    {
+      "blur-material": 0.12,
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "value": { "solid": "display-p3:0.40392,0.85098,0.93333,1.00000" }
+            },
+            {
+              "appearance": "dark",
+              "value": { "solid": "extended-gray:1.00000,1.00000" }
+            },
+            {
+              "appearance": "tinted",
+              "value": { "solid": "extended-gray:1.00000,1.00000" }
+            }
+          ],
+          "glass": true,
+          "hidden": false,
+          "image-name": "check-seal.svg",
+          "name": "Check seal",
+          "position": { "scale": 1, "translation-in-points": [0, 0] }
+        }
+      ],
+      "lighting": "individual",
+      "shadow": { "kind": "layer-color", "opacity": 0.4 },
+      "specular": true,
+      "translucency": { "enabled": true, "value": 0.92 }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}
