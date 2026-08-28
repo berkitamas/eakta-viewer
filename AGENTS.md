@@ -45,7 +45,7 @@
 ## Dependencies and releases
 
 - Use Node 24 and npm. `package-lock.json` is canonical; automation uses `npm ci`.
-- Before updating a dependency, verify its engines and peer range against React Native 0.81.6, React Native macOS 0.81.9, React 19.1.4, and TypeScript 7.0.2.
+- Before updating a dependency, verify its engines and peer range against React Native 0.81.6, React Native macOS 0.81.9, React 19.2.8, and TypeScript 7.0.2.
 - Conventional Commits are mandatory: `feat(viewer): add preview`, `fix(verifier): reject duplicate IDs`, `docs: explain privacy`, `test(crypto): add timestamp vector`, `build: update toolchain`, `ci: package universal app`, `chore: refresh trust snapshot`.
 - Use `!` or a `BREAKING CHANGE:` footer for breaking changes.
 - Release Please owns version and changelog updates. Release assets remain named `unsigned` because ad-hoc signing supplies no publisher identity or notarization.
