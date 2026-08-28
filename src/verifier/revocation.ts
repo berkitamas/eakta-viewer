@@ -4,10 +4,14 @@ import {
   CertID,
   Certificate,
   CertificateRevocationList,
+  OCSPRequest,
+  OCSPResponse,
 } from 'pkijs';
 import type { ValidationCheck, VerificationStatus } from '../domain/types';
 import { decodeStrictBase64 } from './certificates';
-import { XADES_NAMESPACES } from './limits';
+import { encodeTransportBase64, readAllResource } from './base64';
+import { MAX_ES3_BYTES, XADES_NAMESPACES } from './limits';
+import type { VerifierIO } from './types';
 
 const CLOCK_SKEW_MS = 5 * 60 * 1000;
 const MAX_EVIDENCE_AGE_MS = 24 * 60 * 60 * 1000;
@@ -75,6 +79,14 @@ export interface RevocationResult {
   status: VerificationStatus;
   checks: ValidationCheck[];
   source?: 'ocsp' | 'crl';
+}
+
+export function bestEffortRevocationStatus(
+  chainStatus: VerificationStatus,
+  revocationStatus: VerificationStatus,
+): VerificationStatus {
+  if (revocationStatus === 'invalid') return 'invalid';
+  return chainStatus === 'valid' ? 'valid' : 'indeterminate';
 }
 
 async function evaluateOcsp(
@@ -213,6 +225,114 @@ async function evaluateCrl(
           },
         ],
       };
+}
+
+export interface OnlineRevocationContext {
+  io: VerifierIO;
+  sessionId: string;
+  trustToken: string;
+}
+
+function extensionURLs(certificate: Certificate, oid: string): string[] {
+  const extension = certificate.extensions?.find(value => value.extnID === oid);
+  if (!extension) return [];
+  const bytes = new Uint8Array(extension.extnValue.valueBlock.valueHexView);
+  let text = '';
+  for (const byte of bytes)
+    text += byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ' ';
+  return Array.from(
+    text.matchAll(/https?:\/\/[A-Za-z0-9._~:/?#\x5B\x5D@!$&'()*+,;=%-]+/g),
+    match => match[0],
+  );
+}
+
+async function onlineBytes(
+  context: OnlineRevocationContext,
+  kind: 'ocsp' | 'crl',
+  url: string,
+  bodyBase64?: string,
+): Promise<Uint8Array> {
+  if (!context.io.fetchEvidence || !context.io.releaseEvidence)
+    throw new Error('online-evidence-unavailable');
+  const capability = await context.io.fetchEvidence({
+    sessionId: context.sessionId,
+    kind,
+    url,
+    method: bodyBase64 ? 'POST' : 'GET',
+    bodyBase64,
+    parentCapabilityToken: context.trustToken,
+    stage: 'verified-chain',
+  });
+  try {
+    return await readAllResource(
+      context.io,
+      'evidence',
+      capability.evidenceToken,
+      capability.size,
+      MAX_ES3_BYTES,
+      'revocation-size-limit',
+    );
+  } finally {
+    await context.io.releaseEvidence(capability.evidenceToken);
+  }
+}
+
+export async function validateOnlineRevocation(
+  certificate: Certificate,
+  issuer: Certificate,
+  time: Date,
+  context: OnlineRevocationContext | undefined,
+): Promise<RevocationResult | undefined> {
+  if (!context) return undefined;
+  for (const url of extensionURLs(certificate, '2.5.29.31')) {
+    try {
+      const raw = await onlineBytes(context, 'crl', url);
+      const schema = fromBER(raw);
+      if (schema.offset === -1) continue;
+      const result = await evaluateCrl(
+        new CertificateRevocationList({ schema: schema.result }),
+        certificate,
+        issuer,
+        time,
+      );
+      if (result?.status === 'valid' || result?.status === 'invalid')
+        return result;
+    } catch {
+      // Try the next exact certificate-declared endpoint.
+    }
+  }
+  const request = new OCSPRequest();
+  await request.createForCertificate(certificate, {
+    hashAlgorithm: 'SHA-256',
+    issuerCertificate: issuer,
+  });
+  const bodyBase64 = encodeTransportBase64(
+    new Uint8Array(request.toSchema(true).toBER(false)),
+  );
+  for (const url of extensionURLs(certificate, '1.3.6.1.5.5.7.1.1')) {
+    try {
+      const raw = await onlineBytes(context, 'ocsp', url, bodyBase64);
+      const schema = fromBER(raw);
+      if (schema.offset === -1) continue;
+      const response = new OCSPResponse({ schema: schema.result });
+      if (!response.responseBytes) continue;
+      const basicSchema = fromBER(
+        response.responseBytes.response.valueBlock.valueHexView,
+      );
+      if (basicSchema.offset === -1) continue;
+      const result = await evaluateOcsp(
+        new BasicOCSPResponse({ schema: basicSchema.result }),
+        certificate,
+        issuer,
+        time,
+      );
+      if (result?.status === 'valid' || result?.status === 'invalid')
+        return result;
+    } catch {
+      // Try the next exact certificate-declared endpoint.
+    }
+  }
+  return undefined;
 }
 
 export async function validateEmbeddedRevocation(

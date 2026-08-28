@@ -105,6 +105,7 @@ export const en = {
   checkCrlRevoked: 'CRL revocation status',
   checkCrlGood: 'CRL certificate status',
   checkCrlFreshness: 'CRL freshness',
+  bestEffortRevocation: 'Best effort—online revocation evidence unavailable',
   checkValid: 'Passed',
   checkInvalid: 'Failed',
   checkIndeterminate: 'Unavailable',

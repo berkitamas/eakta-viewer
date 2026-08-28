@@ -126,10 +126,22 @@ export function ValidationInspector({
               </>
             ) : null}
             <StatusBadge status={signature.status} />
+            {signature.warnings.includes(
+              'revocation-unavailable-best-effort',
+            ) ? (
+              <Text style={styles.warning}>{t('bestEffortRevocation')}</Text>
+            ) : null}
             <Text style={styles.section}>{t('timestamps')}</Text>
             {signature.timestamps.map(timestamp => (
               <View key={timestamp.id} style={styles.card}>
                 <StatusBadge status={timestamp.status} />
+                {timestamp.warnings.includes(
+                  'revocation-unavailable-best-effort',
+                ) ? (
+                  <Text style={styles.warning}>
+                    {t('bestEffortRevocation')}
+                  </Text>
+                ) : null}
                 {timestamp.generationTime ? (
                   <Field
                     label={t('timestampGenerated')}
@@ -245,6 +257,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 12,
     textTransform: 'uppercase',
+  },
+  warning: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 7,
+    color: '#92400E',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
   },
   title: {
     borderBottomColor: '#E5E7EB',
