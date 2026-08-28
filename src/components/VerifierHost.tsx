@@ -14,6 +14,7 @@ import {
   type HostToVerifierMessage,
   type VerifierToHostMessage,
 } from '../verifier/protocol';
+import { createDeferred } from '../utils/deferred';
 import { verifierHtml } from '../verifier/verifierBundle.generated';
 
 interface VerifierHostProps {
@@ -39,6 +40,9 @@ export function VerifierHost({
   const webView = useRef<React.ComponentRef<typeof WebView>>(null);
   const active = useRef<ActiveSession | undefined>(undefined);
   const cancellationAck = useRef<(() => void) | undefined>(undefined);
+  const cleanupInFlight = useRef<
+    { requestId: string; promise: Promise<void> } | undefined
+  >(undefined);
   const [ready, setReady] = useState(false);
 
   const post = useCallback((message: HostToVerifierMessage) => {
@@ -197,44 +201,69 @@ export function VerifierHost({
   useEffect(() => {
     if (!ready) return;
     let disposed = false;
+    let startStage = 'cancel';
     const cancelPrevious = async () => {
       const previous = active.current;
       if (!previous) return;
-      const { promise, resolve } = Promise.withResolvers<void>();
-      cancellationAck.current = resolve;
-      post({
-        protocolVersion: VERIFIER_PROTOCOL_VERSION,
-        type: 'cancel',
+      const existing = cleanupInFlight.current;
+      if (existing?.requestId === previous.requestId) {
+        await existing.promise;
+        return;
+      }
+      const cleanup = (async () => {
+        const { promise, resolve } = createDeferred();
+        cancellationAck.current = resolve;
+        let cancellationPosted = false;
+        try {
+          post({
+            protocolVersion: VERIFIER_PROTOCOL_VERSION,
+            type: 'cancel',
+            requestId: previous.requestId,
+            operationId: `${previous.requestId}:cancel`,
+          });
+          cancellationPosted = true;
+        } catch {
+          recordDiagnostic('native-operation-failed');
+        }
+        if (cancellationPosted) {
+          const timeout = createDeferred();
+          setTimeout(timeout.resolve, 5_000);
+          await Promise.race([promise, timeout.promise]);
+        }
+        if (cancellationAck.current === resolve)
+          cancellationAck.current = undefined;
+        try {
+          await NativeES3MacBridge.cancelSession(previous.sessionId);
+        } catch {
+          recordDiagnostic('native-operation-failed');
+        }
+        try {
+          await NativeES3MacBridge.cleanupSession(previous.sessionId);
+        } catch {
+          recordDiagnostic('native-operation-failed');
+        } finally {
+          if (active.current?.requestId === previous.requestId)
+            active.current = undefined;
+        }
+      })();
+      cleanupInFlight.current = {
         requestId: previous.requestId,
-        operationId: `${previous.requestId}:cancel`,
-      });
-      const timeout = Promise.withResolvers<void>();
-      setTimeout(timeout.resolve, 5_000);
-      await Promise.race([promise, timeout.promise]);
-      if (cancellationAck.current === resolve)
-        cancellationAck.current = undefined;
-      try {
-        await NativeES3MacBridge.cancelSession(previous.sessionId);
-      } catch {
-        recordDiagnostic('native-operation-failed');
-      }
-      try {
-        await NativeES3MacBridge.cleanupSession(previous.sessionId);
-      } catch {
-        recordDiagnostic('native-operation-failed');
-      } finally {
-        if (active.current?.requestId === previous.requestId)
-          active.current = undefined;
-      }
+        promise: cleanup,
+      };
+      await cleanup;
+      if (cleanupInFlight.current?.promise === cleanup)
+        cleanupInFlight.current = undefined;
     };
     const start = async () => {
       await cancelPrevious();
+      startStage = 'activate';
       if (disposed || !input) return;
       requestSequence += 1;
       const requestId = `request-${requestSequence}`;
       active.current = { requestId, sessionId: input.sessionId };
       onPhase('reading');
       let cache: TrustCacheResult;
+      startStage = 'cache';
       try {
         cache = await NativeES3MacBridge.loadTrustCache();
       } catch {
@@ -255,6 +284,7 @@ export function VerifierHost({
               metadata: { ...cache.metadata, schemaVersion: 1 as const },
             }
           : undefined;
+      startStage = 'post';
       post({
         protocolVersion: VERIFIER_PROTOCOL_VERSION,
         type: 'start',
@@ -274,7 +304,7 @@ export function VerifierHost({
     void start().catch(() => {
       if (disposed || !input) return;
       recordDiagnostic('session-start-failed');
-      onError('session-start-failed');
+      onError(`session-start-failed-${startStage}`);
     });
     return () => {
       disposed = true;

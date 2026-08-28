@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderWidth: 1,
     justifyContent: 'center',
+    marginVertical: 'auto',
     maxWidth: 720,
     minHeight: 460,
     padding: 48,

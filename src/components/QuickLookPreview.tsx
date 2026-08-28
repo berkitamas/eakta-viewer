@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import QuickLookPreviewNativeComponent from '../native/specs/QuickLookPreviewNativeComponent';
 import type { PreviewStateEvent } from '../native/specs/QuickLookPreviewNativeComponent';
@@ -15,14 +15,9 @@ export function QuickLookPreview({
   fallbackLabel,
 }: QuickLookPreviewProps): React.JSX.Element {
   const [fallback, setFallback] = useState(false);
-  const cancelFallbackTimer = useRef<() => void>(() => {});
 
   useEffect(() => {
     setFallback(false);
-    cancelFallbackTimer.current();
-    const timeout = setTimeout(() => setFallback(true), 5_500);
-    cancelFallbackTimer.current = () => clearTimeout(timeout);
-    return () => cancelFallbackTimer.current();
   }, [previewPath]);
 
   if (fallback) {
@@ -45,10 +40,7 @@ export function QuickLookPreview({
       accessibilityLabel={fallbackLabel}
       onPreviewState={event => {
         const state: PreviewStateEvent['state'] = event.nativeEvent.state;
-        if (state === 'ready') {
-          cancelFallbackTimer.current();
-        } else if (state === 'unsupported' || state === 'error') {
-          cancelFallbackTimer.current();
+        if (state === 'unsupported' || state === 'error') {
           setFallback(true);
         }
       }}
