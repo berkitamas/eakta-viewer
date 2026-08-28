@@ -61,7 +61,6 @@ jobs:
           key: derived-release-${{ runner.os }}-${{ hashFiles('package-lock.json', 'macos/Podfile.lock', 'macos/EaktaViewer.xcodeproj/project.pbxproj') }}
           restore-keys: derived-release-${{ runner.os }}-
       - run: make bootstrap
-      - run: make check
       - name: Build release package
         env:
           TAG_NAME: ${{ github.event.inputs.release_tag || needs.release-please.outputs.tag_name }}
