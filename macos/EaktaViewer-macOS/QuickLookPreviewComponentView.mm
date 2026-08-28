@@ -121,16 +121,6 @@ using namespace facebook::react;
   [super updateProps:props oldProps:oldProps];
 }
 
-- (void)viewDidMoveToWindow
-{
-  [super viewDidMoveToWindow];
-  if (self.window && !_previewView.previewItem && !_readinessPending) {
-    const auto &previewProps =
-      *std::static_pointer_cast<QuickLookPreviewProps const>(_props);
-    if (!previewProps.previewPath.empty())
-      [self loadPreviewPath:RCTNSStringFromString(previewProps.previewPath)];
-  }
-}
 
 - (void)prepareForRecycle
 {
@@ -143,6 +133,9 @@ using namespace facebook::react;
     _thumbnailRequest = nil;
   }
   _previewView.previewItem = nil;
+  _previewView = [[QLPreviewView alloc] initWithFrame:self.bounds
+                                                style:QLPreviewViewStyleNormal];
+  self.contentView = _previewView;
 }
 
 @end

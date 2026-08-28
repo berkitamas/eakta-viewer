@@ -309,11 +309,73 @@ RCT_EXPORT_MODULE(ES3MacBridge)
 
 - (void)fetchEvidence:(JS::NativeES3MacBridge::EvidenceRequest &)request resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
-  (void)request;
-  (void)resolve;
-  reject(@"evidence-network-disabled",
-         @"Online evidence retrieval is disabled until peer-address pinning is available.",
-         nil);
+  NSString *sessionId = request.sessionId();
+  NSString *kind = request.kind();
+  NSString *urlString = request.url();
+  NSString *method = request.method();
+  NSString *bodyBase64 = request.bodyBase64();
+  NSString *parentToken = request.parentCapabilityToken();
+  NSString *stage = request.stage();
+  NSURL *url = [NSURL URLWithString:urlString];
+  NSDictionary *origin;
+  @synchronized(self.evidenceOrigins) {
+    origin = self.evidenceOrigins[parentToken];
+  }
+  BOOL parentIsInput = [self.capabilities session:sessionId ownsInputToken:parentToken];
+  BOOL originMatches = [origin[@"sessionId"] isEqualToString:sessionId];
+  BOOL lotlAllowed = [stage isEqualToString:@"bootstrap"] && parentIsInput &&
+    [kind isEqualToString:@"lotl"] &&
+    [urlString isEqualToString:@"https://ec.europa.eu/tools/lotl/eu-lotl.xml"];
+  BOOL tslAllowed = [stage isEqualToString:@"verified-lotl"] && originMatches &&
+    [origin[@"kind"] isEqualToString:@"lotl"] && [kind isEqualToString:@"tsl"];
+  BOOL aiaAllowed = [stage isEqualToString:@"linked-certificate"] && parentIsInput &&
+    [kind isEqualToString:@"aia"];
+  BOOL revocationAllowed = [stage isEqualToString:@"verified-chain"] &&
+    originMatches && [origin[@"kind"] isEqualToString:@"tsl"] &&
+    ([kind isEqualToString:@"ocsp"] || [kind isEqualToString:@"crl"]);
+  NSData *body = bodyBase64.length
+    ? [[NSData alloc] initWithBase64EncodedString:bodyBase64 options:0]
+    : nil;
+  BOOL methodAllowed = [method isEqualToString:@"GET"] && !bodyBase64.length;
+  methodAllowed |= [method isEqualToString:@"POST"] && [kind isEqualToString:@"ocsp"] &&
+    body.length > 0 && body.length <= 64 * 1024;
+  if (!(lotlAllowed || tslAllowed || aiaAllowed || revocationAllowed) ||
+      !methodAllowed || !ES3EndpointIsPublic(url)) {
+    reject(@"evidence-policy", @"The evidence endpoint is not permitted.", nil);
+    return;
+  }
+  NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:url];
+  urlRequest.HTTPMethod = method;
+  urlRequest.HTTPBody = body;
+  if (body.length)
+    [urlRequest setValue:@"application/ocsp-request" forHTTPHeaderField:@"Content-Type"];
+  __block ES3EvidenceRequest *fetch;
+  fetch = [[ES3EvidenceRequest alloc] initWithURLRequest:urlRequest completion:
+    ^(NSData *data, NSString *mime, NSString *errorCode) {
+      @synchronized(self.activeEvidence) {
+        [self.activeEvidence[sessionId] removeObject:fetch];
+      }
+      if (errorCode || !data) {
+        reject(@"evidence-fetch", @"Unable to retrieve validation evidence.", nil);
+        return;
+      }
+      [self.capabilities storeEvidence:data mimeType:mime sessionId:sessionId
+        completion:^(NSDictionary *value, NSError *error) {
+          if (!error) {
+            @synchronized(self.evidenceOrigins) {
+              self.evidenceOrigins[value[@"evidenceToken"]] =
+                @{@"sessionId": sessionId, @"kind": kind, @"url": urlString};
+            }
+          }
+          [self resolveDictionary:resolve reject:reject value:value error:error
+                             code:@"evidence-store-failed"];
+        }];
+    }];
+  @synchronized(self.activeEvidence) {
+    if (!self.activeEvidence[sessionId])
+      self.activeEvidence[sessionId] = [NSMutableArray array];
+    [self.activeEvidence[sessionId] addObject:fetch];
+  }
 }
 
 - (void)readEvidenceChunk:(NSString *)evidenceToken offset:(double)offset length:(double)length resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject

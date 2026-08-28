@@ -22,6 +22,8 @@
 		AA20000E0000000000000000 /* eu-lotl.xml in Resources */ = {isa = PBXBuildFile; fileRef = AA10000E0000000000000000 /* eu-lotl.xml */; };
 		AA20000F0000000000000000 /* HU_TL.xml in Resources */ = {isa = PBXBuildFile; fileRef = AA10000F0000000000000000 /* HU_TL.xml */; };
 		AA2000100000000000000000 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = AA1000100000000000000000 /* manifest.json */; };
+		AA2000120000000000000000 /* ES3AddressPolicy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA1000120000000000000000 /* ES3AddressPolicy.mm */; };
+		AA2000140000000000000000 /* ES3HTTPResponseParser.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA1000140000000000000000 /* ES3HTTPResponseParser.mm */; };
 		C3801B4B2230789298F7263D /* libPods-EaktaViewer-macOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9477AC85B5A4C2CC08CE6CB7 /* libPods-EaktaViewer-macOS.a */; };
 /* End PBXBuildFile section */
 
@@ -53,6 +55,10 @@
 		AA10000E0000000000000000 /* eu-lotl.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = "eu-lotl.xml"; path = "../../src/verifier/trust/snapshot/eu-lotl.xml"; sourceTree = "<group>"; };
 		AA10000F0000000000000000 /* HU_TL.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = HU_TL.xml; path = ../../src/verifier/trust/snapshot/HU_TL.xml; sourceTree = "<group>"; };
 		AA1000100000000000000000 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = ../../src/verifier/trust/snapshot/manifest.json; sourceTree = "<group>"; };
+		AA1000110000000000000000 /* ES3AddressPolicy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ES3AddressPolicy.h; sourceTree = "<group>"; };
+		AA1000120000000000000000 /* ES3AddressPolicy.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ES3AddressPolicy.mm; sourceTree = "<group>"; };
+		AA1000130000000000000000 /* ES3HTTPResponseParser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ES3HTTPResponseParser.h; sourceTree = "<group>"; };
+		AA1000140000000000000000 /* ES3HTTPResponseParser.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ES3HTTPResponseParser.mm; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F93951E2DF422632A350A84B /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
 		FD1880F3257159B92BFD2812 /* Pods-EaktaViewer-macOS.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-EaktaViewer-macOS.release.xcconfig"; path = "Target Support Files/Pods-EaktaViewer-macOS/Pods-EaktaViewer-macOS.release.xcconfig"; sourceTree = "<group>"; };
@@ -93,6 +99,10 @@
 				AA1000040000000000000000 /* ES3CapabilityStore.mm */,
 				AA1000050000000000000000 /* ES3EvidenceBroker.h */,
 				AA1000060000000000000000 /* ES3EvidenceBroker.mm */,
+				AA1000110000000000000000 /* ES3AddressPolicy.h */,
+				AA1000120000000000000000 /* ES3AddressPolicy.mm */,
+				AA1000130000000000000000 /* ES3HTTPResponseParser.h */,
+				AA1000140000000000000000 /* ES3HTTPResponseParser.mm */,
 				AA1000070000000000000000 /* ES3TrustCacheStore.h */,
 				AA1000080000000000000000 /* ES3TrustCacheStore.mm */,
 				AA1000090000000000000000 /* QuickLookPreviewComponentView.h */,
@@ -333,6 +343,8 @@
 				AA2000020000000000000000 /* ES3MacBridge.mm in Sources */,
 				AA2000040000000000000000 /* ES3CapabilityStore.mm in Sources */,
 				AA2000060000000000000000 /* ES3EvidenceBroker.mm in Sources */,
+				AA2000120000000000000000 /* ES3AddressPolicy.mm in Sources */,
+				AA2000140000000000000000 /* ES3HTTPResponseParser.mm in Sources */,
 				AA2000080000000000000000 /* ES3TrustCacheStore.mm in Sources */,
 				AA20000A0000000000000000 /* QuickLookPreviewComponentView.mm in Sources */,
 				AA20000C0000000000000000 /* ES3MenuController.mm in Sources */,
@@ -372,6 +384,10 @@
 					"-lc++",
 					"-framework",
 					QuickLookThumbnailing,
+					"-framework",
+					Network,
+					"-framework",
+					Security,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = hu.btj.eaktaviewer;
 				PRODUCT_NAME = "e-Akta Viewer";
@@ -399,6 +415,10 @@
 					"-lc++",
 					"-framework",
 					QuickLookThumbnailing,
+					"-framework",
+					Network,
+					"-framework",
+					Security,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = hu.btj.eaktaviewer;
 				PRODUCT_NAME = "e-Akta Viewer";
