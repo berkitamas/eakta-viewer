@@ -271,6 +271,13 @@ RCT_EXPORT_MODULE(ES3MacBridge)
 - (void)loadTrustCache:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   [self.trustCache load:^(NSDictionary *value, NSError *error) {
+    NSString *cacheToken = error ? nil : value[@"cacheToken"];
+    if (cacheToken.length) {
+      @synchronized(self.evidenceOrigins) {
+        self.evidenceOrigins[cacheToken] =
+          @{@"sessionId": @"", @"kind": @"tsl", @"url": @"native-trust-cache"};
+      }
+    }
     [self resolveDictionary:resolve reject:reject value:value error:error code:@"cache-load-failed"];
   }];
 }
@@ -320,6 +327,15 @@ RCT_EXPORT_MODULE(ES3MacBridge)
   NSDictionary *origin;
   @synchronized(self.evidenceOrigins) {
     origin = self.evidenceOrigins[parentToken];
+    BOOL unboundTrustCache =
+      [origin[@"kind"] isEqualToString:@"tsl"] &&
+      [origin[@"sessionId"] isEqualToString:@""] &&
+      [self.capabilities hasSession:sessionId];
+    if (unboundTrustCache) {
+      origin = @{@"sessionId": sessionId, @"kind": @"tsl",
+                 @"url": @"native-trust-cache"};
+      self.evidenceOrigins[parentToken] = origin;
+    }
   }
   BOOL parentIsInput = [self.capabilities session:sessionId ownsInputToken:parentToken];
   BOOL originMatches = [origin[@"sessionId"] isEqualToString:sessionId];
