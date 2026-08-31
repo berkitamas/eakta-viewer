@@ -8,3 +8,4 @@ src/verifier/verifierBundle.generated.ts
 vendor/
 package-lock.json
 CHANGELOG.md
+.omp/

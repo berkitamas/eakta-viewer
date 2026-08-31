@@ -53,13 +53,13 @@ export function VerifierHost({
     (message: VerifierToHostMessage, code: string) => {
       post({
         protocolVersion: VERIFIER_PROTOCOL_VERSION,
-        type: 'write-ack',
+        type: 'protocol-error',
         requestId: message.requestId,
         operationId: message.operationId,
+        code,
       });
-      onError(code);
     },
-    [onError, post],
+    [post],
   );
 
   const handleMessage = useCallback(

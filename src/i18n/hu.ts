@@ -109,6 +109,8 @@ export const hu = {
   checkCrlRevoked: 'CRL visszavonási állapot',
   checkCrlGood: 'CRL tanúsítványállapot',
   checkCrlFreshness: 'A CRL frissessége',
+  bestEffortRevocation:
+    'Legjobb elérhető eredmény – az online visszavonási bizonyíték nem érhető el',
   checkValid: 'Megfelelt',
   checkInvalid: 'Sikertelen',
   checkIndeterminate: 'Nem érhető el',

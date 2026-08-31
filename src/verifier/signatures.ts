@@ -10,7 +10,12 @@ import {
   bindVerificationKeyAlgorithm,
   ensureCryptoEngine,
 } from './cryptoEngine';
-import { validateEmbeddedRevocation } from './revocation';
+import {
+  bestEffortRevocationStatus,
+  validateEmbeddedRevocation,
+  validateOnlineRevocation,
+  type OnlineRevocationContext,
+} from './revocation';
 import {
   enforceSignaturePolicy,
   signatureTimeStampElements,
@@ -29,6 +34,7 @@ export async function validateDossierSignatures(
   root: Element,
   trust: TrustContext | undefined,
   validationTime: Date,
+  onlineRevocation?: OnlineRevocationContext,
 ): Promise<SignatureResult[]> {
   if (signatures.length === 0) return [];
   ensureCryptoEngine();
@@ -79,6 +85,7 @@ export async function validateDossierSignatures(
           timestampIndex,
           trust,
           validationTime,
+          onlineRevocation,
         ),
       );
     }
@@ -115,14 +122,28 @@ export async function validateDossierSignatures(
       chainStatus = chain.status;
       const issuer = chain.path[1];
       if (issuer) {
-        const revocation = await validateEmbeddedRevocation(
+        let revocation = await validateEmbeddedRevocation(
           signature,
           selected.certificate,
           issuer,
           trustedTime,
         );
+        if (revocation.status === 'indeterminate') {
+          revocation =
+            (await validateOnlineRevocation(
+              selected.certificate,
+              issuer,
+              validationTime,
+              onlineRevocation,
+            )) ?? revocation;
+        }
         checks.push(...revocation.checks);
-        revocationStatus = revocation.status;
+        revocationStatus = bestEffortRevocationStatus(
+          chain.status,
+          revocation.status,
+        );
+        if (revocation.status === 'indeterminate' && chain.status === 'valid')
+          warnings.push('revocation-unavailable-best-effort');
       }
     }
     let status = reduceStatus([

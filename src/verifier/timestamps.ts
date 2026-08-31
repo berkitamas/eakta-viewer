@@ -7,11 +7,16 @@ import {
   TSTInfo,
 } from 'pkijs';
 import { XmlCanonicalizer } from 'xmldsigjs';
+import {
+  bestEffortRevocationStatus,
+  validateEmbeddedRevocation,
+  validateOnlineRevocation,
+  type OnlineRevocationContext,
+} from './revocation';
 import type { TimestampResult, ValidationCheck } from '../domain/types';
 import { validateHistoricalChain } from './chains';
 import { summarizeCertificate } from './certificates';
 import { XMLDSIG_NAMESPACE } from './limits';
-import { validateEmbeddedRevocation } from './revocation';
 import { signatureValueElement } from './signaturePolicy';
 import type { TrustContext } from './trust/refreshTrustData';
 import { directChild, descendants } from './xml';
@@ -153,6 +158,7 @@ export async function validateSignatureTimestamp(
   index: number,
   trust: TrustContext | undefined,
   validationTime: Date,
+  onlineRevocation?: OnlineRevocationContext,
 ): Promise<TimestampResult> {
   const id = timestamp.getAttribute('Id') || `timestamp-${index + 1}`;
   const encapsulated = descendants(
@@ -250,16 +256,20 @@ export async function validateSignatureTimestamp(
     );
     checks.push(...chain.checks);
     const issuer = chain.path[1];
-    const revocation = issuer
+    let revocation = issuer
       ? await validateEmbeddedRevocation(signature, tsa, issuer, info.genTime)
       : { status: 'indeterminate' as const, checks: [] };
+    if (issuer && revocation.status === 'indeterminate') {
+      revocation =
+        (await validateOnlineRevocation(
+          tsa,
+          issuer,
+          validationTime,
+          onlineRevocation,
+        )) ?? revocation;
+    }
     checks.push(...revocation.checks);
-    const status =
-      chain.status === 'valid' && revocation.status === 'valid'
-        ? 'valid'
-        : revocation.status === 'invalid'
-        ? 'invalid'
-        : 'indeterminate';
+    const status = bestEffortRevocationStatus(chain.status, revocation.status);
     return {
       id,
       status,
@@ -269,8 +279,10 @@ export async function validateSignatureTimestamp(
       policyOid: info.policy,
       checks,
       warnings:
-        status === 'indeterminate'
-          ? ['timestamp-trust-or-revocation-unavailable']
+        revocation.status === 'indeterminate'
+          ? ['revocation-unavailable-best-effort']
+          : status === 'indeterminate'
+          ? ['timestamp-trust-unavailable']
           : [],
     };
   } catch {

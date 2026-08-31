@@ -212,6 +212,13 @@ export async function verifyAndExtractDossier(
       parsed.root,
       trust,
       validationTime,
+      request.trustCache
+        ? {
+            io,
+            sessionId: request.input.sessionId,
+            trustToken: request.trustCache.cacheToken,
+          }
+        : undefined,
     );
     const checks: ValidationCheck[] = [
       {

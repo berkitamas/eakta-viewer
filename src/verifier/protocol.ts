@@ -60,7 +60,8 @@ export type HostToVerifierMessage =
   | ResourceChunkMessage
   | WriteAcknowledgementMessage
   | EvidenceCapabilityMessage
-  | TrustWriteAcknowledgementMessage;
+  | TrustWriteAcknowledgementMessage
+  | ProtocolErrorMessage;
 
 export interface ReadResourceMessage extends RpcEnvelope {
   type: 'read-resource';
