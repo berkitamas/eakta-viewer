@@ -41,7 +41,7 @@
     "@react-native-community/cli": "20.2.0",
     "@react-native/babel-preset": "0.81.6",
     "@react-native/metro-config": "0.81.6",
-    "@react-native/typescript-config": "0.81.6",
+    "@react-native/typescript-config": "0.87.1",
     "@testing-library/react-native": "14.0.1",
     "@types/jest": "^29.5.13",
     "@types/node": "24.13.3",
